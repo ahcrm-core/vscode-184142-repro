@@ -7,10 +7,13 @@ function trace(event, extra = {}) {
 }
 
 function activate(context) {
+  const installed = process.env.ISSUE_184142_INSTALLED === '1';
+  const hadWorkspaceSave = installed && fs.readFileSync(process.env.ISSUE_184142_TRACE, 'utf8').includes('"event":"workspace_save_requested"');
   trace('extension_activate');
   const onDidChange = new vscode.EventEmitter();
   context.subscriptions.push(onDidChange);
   const documents = new Map();
+  let probeStarted = false;
 
   const edit = document => {
     const before = document.value;
@@ -50,6 +53,20 @@ function activate(context) {
       panel.webview.postMessage({ value: document.value });
       panel.webview.onDidReceiveMessage(message => { if (message?.type === 'edit') edit(document); });
       trace('editor_resolve');
+      if (installed && !hadWorkspaceSave && !probeStarted) {
+        probeStarted = true;
+        setTimeout(async () => {
+          try {
+            edit(document);
+            await vscode.commands.executeCommand('undo');
+            await vscode.commands.executeCommand('redo');
+            trace('dirty_edit_done');
+            trace('workspace_save_requested');
+            await vscode.commands.executeCommand('workbench.action.saveWorkspaceAs');
+            trace('workspace_save_command_resolved');
+          } catch (error) { trace('probe_error', { message: String(error) }); }
+        }, 700);
+      }
     },
     async saveCustomDocument(document) {
       await vscode.workspace.fs.writeFile(document.uri, Buffer.from(document.value));
@@ -70,6 +87,9 @@ function activate(context) {
     }
   };
   context.subscriptions.push(vscode.window.registerCustomEditorProvider('orqelon.issue184142', provider, { supportsMultipleEditorsPerDocument: false }));
+  if (installed && hadWorkspaceSave) {
+    setTimeout(() => { void vscode.commands.executeCommand('orqelon.issue184142.alive').catch(error => trace('alive_error', { message: String(error) })); }, 1000);
+  }
 }
 
 function deactivate() { trace('extension_deactivate'); }

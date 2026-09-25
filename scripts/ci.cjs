@@ -1,7 +1,7 @@
-const { runTests } = require('@vscode/test-electron');
+const { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } = require('@vscode/test-electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawn } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const artifacts = path.join(root, 'artifacts');
@@ -38,7 +38,7 @@ const timer = setInterval(() => {
   const observed = records();
   if (observed.some(item => item.event === 'workspace_save_requested') && !started) {
     started = true;
-    deadline = Date.now() + 45000;
+    deadline = Date.now() + 60000;
     setTimeout(() => {
       screenshot('save-workspace-dialog.png');
       const visible = windows();
@@ -79,18 +79,27 @@ function finish() {
   let status = 'INCONCLUSIVE';
   if (!events.includes('dirty_edit_done')) status = 'SETUP_FAILED';
   else if (!events.includes('workspace_save_requested')) status = 'WORKSPACE_SAVE_NOT_REQUESTED';
-  else if (events.includes('test_host_restarted') && events.includes('alive')) status = 'RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW';
+  else if (events.filter(event => event === 'extension_activate').length > 1 && events.includes('alive')) status = 'RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW';
   fs.writeFileSync(path.join(artifacts, 'result.json'), JSON.stringify({ status, workspaceFileCreated: fs.existsSync(workspace), observed, note: 'First Red requires the real Save Workspace As/Restart Anyway transition and evidence that the surviving editor cannot save or track changes. A green CI job only means the diagnostic completed.' }, null, 2));
   console.log('DIAGNOSTIC_STATUS:', status);
   process.exit(0);
 }
 
-setTimeout(finish, 110000);
-runTests({
-  extensionDevelopmentPath: root,
-  extensionTestsPath: path.join(__dirname, 'extension-test.cjs'),
-  launchArgs: ['--disable-workspace-trust', '--skip-welcome', '--disable-telemetry']
-}).then(() => { if (!started) finish(); }, error => {
-  console.log('VS Code test host ended:', error.message);
-  if (!started) finish();
-});
+setTimeout(finish, 190000);
+
+(async () => {
+  const executable = await downloadAndUnzipVSCode('1.136.1');
+  const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(executable);
+  const userData = path.join(root, '.run-user-data');
+  const extensions = path.join(root, '.run-extensions');
+  const vsix = path.join(artifacts, 'probe.vsix');
+  const options = ['--user-data-dir', userData, '--extensions-dir', extensions];
+  execFileSync(cli, [...cliArgs, ...options, '--install-extension', vsix, '--force'], { timeout: 45000, stdio: 'inherit' });
+  console.log('Installed synthetic probe from VSIX into disposable extension directory.');
+  const child = spawn(executable, [
+    '--no-sandbox', '--disable-gpu-sandbox', '--disable-updates', '--skip-welcome',
+    '--skip-release-notes', '--disable-telemetry', '--new-window', ...options,
+    path.join(root, 'fixture.orqtest')
+  ], { env: { ...process.env, ISSUE_184142_INSTALLED: '1' }, stdio: 'ignore' });
+  child.on('exit', (code, signal) => { console.log('VS Code exited:', code, signal); if (!started) finish(); });
+})().catch(error => { console.log('Installed VS Code setup failed:', error.stack || String(error)); finish(); });

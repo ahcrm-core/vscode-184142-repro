@@ -1,11 +1,12 @@
 {
   "name": "vscode-184142-repro",
   "version": "0.0.1",
+  "publisher": "orqelon-local",
   "private": true,
   "description": "Isolated diagnostic for microsoft/vscode#184142",
   "main": "extension.cjs",
   "engines": { "vscode": "^1.90.0" },
-  "activationEvents": ["onCustomEditor:orqelon.issue184142", "onCommand:orqelon.issue184142.edit", "onCommand:orqelon.issue184142.alive"],
+  "activationEvents": ["onStartupFinished", "onCustomEditor:orqelon.issue184142", "onCommand:orqelon.issue184142.edit", "onCommand:orqelon.issue184142.alive"],
   "contributes": {
     "customEditors": [{
       "viewType": "orqelon.issue184142",
@@ -18,6 +19,6 @@
       { "command": "orqelon.issue184142.alive", "title": "Issue 184142: Record alive and open documents" }
     ]
   },
-  "scripts": { "ci": "node scripts/ci.cjs" },
-  "devDependencies": { "@vscode/test-electron": "2.5.2" }
+  "scripts": { "ci": "node scripts/ci.cjs", "package": "vsce package --no-dependencies -o artifacts/probe.vsix" },
+  "devDependencies": { "@vscode/test-electron": "2.5.2", "@vscode/vsce": "4.0.0" }
 }

@@ -1,0 +1,9 @@
+artifacts/**
+node_modules/**
+scripts/**
+.github/**
+.vscode-test/**
+.run-user-data/**
+.run-extensions/**
+README.md
+package-lock.json
