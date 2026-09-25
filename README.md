@@ -6,6 +6,8 @@ The [GitHub Actions workflow](.github/workflows/reproduce.yml) runs the probe in
 
 The diagnostic packages the provider as a VSIX and installs it in a disposable profile of VS Code 1.136.1 on Linux. It starts in an empty workspace with the synthetic fixture open, edits the custom editor, performs Undo/Redo, then calls VS Code's `workbench.action.saveWorkspaceAs` command. The runner captures the save dialog and only enters a disposable workspace path when it identifies that dialog by title. An `alive` snapshot is recorded if the installed extension activates after the host restarts.
 
+The synthetic extension explicitly supports VS Code's Restricted Mode so a loose file can open with the custom editor in a fresh profile. It reads only the fixture and uses no workspace commands or production data.
+
 **Result policy:** `RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW` means the extension host restarted; it is **not** a reproduced bug. A real First Red additionally requires seeing that the original webview still accepts an edit but does not become dirty or save. `INCONCLUSIVE` is expected if Save Workspace As or Restart Anyway cannot be driven reliably. Linux is a separate platform from the reported macOS reproduction. Never report a passing workflow as a passing VS Code regression.
 
 The save dialog and restart prompt may vary with VS Code versions. Review the saved screenshots before interpreting results. The CI job is limited to twelve minutes and runs only for this test branch or when manually dispatched.

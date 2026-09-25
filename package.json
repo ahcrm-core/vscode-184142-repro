@@ -7,6 +7,7 @@
   "description": "Isolated diagnostic for microsoft/vscode#184142",
   "main": "extension.cjs",
   "engines": { "vscode": "^1.90.0" },
+  "capabilities": { "untrustedWorkspaces": { "supported": true } },
   "activationEvents": ["onStartupFinished", "onCustomEditor:orqelon.issue184142", "onCommand:orqelon.issue184142.edit", "onCommand:orqelon.issue184142.alive"],
   "contributes": {
     "customEditors": [{
