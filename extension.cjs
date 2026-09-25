@@ -17,7 +17,7 @@ function activate(context) {
     const after = before + 'edit\n';
     document.value = after;
     trace('edit_received', { uri: document.uri.toString(), bytes: after.length });
-    onDidChange.fire({ document, label: 'Probe edit', undo() { document.value = before; }, redo() { document.value = after; } });
+    onDidChange.fire({ document, label: 'Probe edit', undo() { document.value = before; trace('undo'); for (const panel of document.panels) panel.webview.postMessage({ value: before }); }, redo() { document.value = after; trace('redo'); for (const panel of document.panels) panel.webview.postMessage({ value: after }); } });
     for (const panel of document.panels) panel.webview.postMessage({ value: after });
   };
 
@@ -25,6 +25,11 @@ function activate(context) {
     const document = [...documents.values()][0];
     if (!document) throw new Error('Probe document is not open');
     edit(document);
+  }));
+
+  context.subscriptions.push(vscode.commands.registerCommand('orqelon.issue184142.alive', () => {
+    const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs.map(tab => ({ label: tab.label, dirty: tab.isDirty, active: tab.isActive })));
+    trace('alive', { openDocuments: [...documents.keys()], tabs });
   }));
 
   const provider = {
@@ -41,7 +46,8 @@ function activate(context) {
       document.panels.add(panel);
       panel.onDidDispose(() => document.panels.delete(panel));
       panel.webview.options = { enableScripts: true, localResourceRoots: [] };
-      panel.webview.html = `<html><body><h1>Issue 184142 probe</h1><button id="edit">Edit marker</button><script>const api=acquireVsCodeApi();document.getElementById('edit').onclick=()=>api.postMessage({type:'edit'});</script></body></html>`;
+      panel.webview.html = `<html><body><h1>Issue 184142 probe</h1><p id="value"></p><button id="edit">Edit marker</button><script>const api=acquireVsCodeApi();document.getElementById('edit').onclick=()=>api.postMessage({type:'edit'});window.addEventListener('message',e=>{document.getElementById('value').textContent=e.data.value});</script></body></html>`;
+      panel.webview.postMessage({ value: document.value });
       panel.webview.onDidReceiveMessage(message => { if (message?.type === 'edit') edit(document); });
       trace('editor_resolve');
     },

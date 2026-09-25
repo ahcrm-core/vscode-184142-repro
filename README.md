@@ -4,6 +4,8 @@ Isolated public probe for [microsoft/vscode#184142](https://github.com/microsoft
 
 The [GitHub Actions workflow](.github/workflows/reproduce.yml) runs the probe in an Xvfb display. Its `issue-184142-diagnostic` artifact contains the trace, screenshot when available, and `result.json`.
 
-**Result policy:** `RESTART_OBSERVED_EDITOR_STATE_UNVERIFIED` means the extension host restarted; it is **not** a reproduced bug. A real First Red additionally requires seeing that the original webview still accepts an edit but does not become dirty or save. `INCONCLUSIVE` is expected if the restart confirmation dialog is not navigated successfully. Never report a passing workflow as a passing VS Code regression.
+The diagnostic starts in an empty window, edits a synthetic custom editor, performs Undo/Redo, then calls the VS Code `workbench.action.saveWorkspaceAs` command. The runner captures the save dialog and only enters a disposable workspace path when it identifies that dialog by title. It records an `alive` snapshot if the extension test host restarts.
 
-The shell's `xdotool` sends Tab and Return to the restart prompt, which may vary with VS Code versions. Review the saved screenshot before interpreting results. The CI job is limited to twelve minutes and runs only for this test branch or when manually dispatched.
+**Result policy:** `RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW` means the extension host restarted; it is **not** a reproduced bug. A real First Red additionally requires seeing that the original webview still accepts an edit but does not become dirty or save. `INCONCLUSIVE` is expected if Save Workspace As or Restart Anyway cannot be driven reliably. Never report a passing workflow as a passing VS Code regression.
+
+The save dialog and restart prompt may vary with VS Code versions. Review the saved screenshots before interpreting results. The CI job is limited to twelve minutes and runs only for this test branch or when manually dispatched.
