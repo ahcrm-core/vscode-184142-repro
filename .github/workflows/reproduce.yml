@@ -1,0 +1,27 @@
+name: VS Code custom editor restart diagnostic
+on:
+  push:
+    branches: ["test/184142-actions"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: sudo apt-get update && sudo apt-get install -y xdotool imagemagick
+      - name: Capture custom editor lifecycle
+        run: xvfb-run -a npm run ci
+      - name: Keep diagnostic trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-184142-diagnostic
+          path: artifacts/
+          if-no-files-found: warn
