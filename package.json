@@ -1,0 +1,20 @@
+{
+  "name": "vscode-184142-repro",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Isolated diagnostic for microsoft/vscode#184142",
+  "main": "extension.cjs",
+  "engines": { "vscode": "^1.90.0" },
+  "activationEvents": ["onCustomEditor:orqelon.issue184142", "onCommand:orqelon.issue184142.edit"],
+  "contributes": {
+    "customEditors": [{
+      "viewType": "orqelon.issue184142",
+      "displayName": "Issue 184142 probe",
+      "selector": [{ "filenamePattern": "*.orqtest" }],
+      "priority": "default"
+    }],
+    "commands": [{ "command": "orqelon.issue184142.edit", "title": "Issue 184142: Edit active probe" }]
+  },
+  "scripts": { "ci": "node scripts/ci.cjs" },
+  "devDependencies": { "@vscode/test-electron": "2.5.2" }
+}
