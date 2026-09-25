@@ -51,7 +51,17 @@ const timer = setInterval(() => {
         xdotool(['type', '--clearmodifiers', '--delay', '2', workspace]);
         xdotool(['key', '--clearmodifiers', 'Return']);
         console.log('Submitted synthetic workspace path to:', dialog.title);
-        setTimeout(() => { screenshot('after-workspace-save.png'); console.log('Visible windows after save:', JSON.stringify(windows())); }, 3000);
+        setTimeout(() => {
+          if (!fs.existsSync(workspace) && windows().some(item => item.id === dialog.id)) {
+            const lines = xdotool(['getwindowgeometry', '--shell', dialog.id]);
+            const geometry = Object.fromEntries(lines.split('\n').filter(line => line.includes('=')).map(line => line.split('=')));
+            const x = Number(geometry.X) + Number(geometry.WIDTH) - 50;
+            const y = Number(geometry.Y) + Number(geometry.HEIGHT) - 27;
+            xdotool(['mousemove', '--sync', String(x), String(y), 'click', '1']);
+            console.log('Clicked Save in the identified workspace dialog.');
+          }
+          setTimeout(() => { screenshot('after-workspace-save.png'); console.log('Visible windows after save:', JSON.stringify(windows())); }, 3000);
+        }, 1200);
       } catch (error) { console.log('Workspace save input failed:', error.message); }
     }, 2000);
   }
