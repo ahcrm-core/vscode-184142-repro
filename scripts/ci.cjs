@@ -72,8 +72,9 @@ const timer = setInterval(() => {
               const width = Number(geometry.WIDTH);
               const height = Number(geometry.HEIGHT);
               if (width < 400 || width > 900 || height < 100 || height > 400) throw new Error('Confirmation window geometry unexpected');
+              console.log('Restart dialog geometry:', JSON.stringify(geometry));
               xdotool(['windowfocus', confirm.id]);
-              xdotool(['mousemove', '--sync', String(Number(geometry.X) + Math.round(width * 0.75)), String(Number(geometry.Y) + height - 17), 'click', '1']);
+              xdotool(['mousemove', '--sync', '--window', confirm.id, String(Math.round(width * 0.75)), String(height - 17), 'click', '1']);
               fs.appendFileSync(trace, JSON.stringify({ at: new Date().toISOString(), pid: process.pid, event: 'restart_anyway_clicked' }) + '\n');
               console.log('Clicked Restart Anyway in the identified confirmation window.');
               setTimeout(() => { screenshot('after-restart-anyway.png'); console.log('Visible windows after restart:', JSON.stringify(windows())); }, 5000);
