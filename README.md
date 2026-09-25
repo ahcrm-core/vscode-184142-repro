@@ -4,7 +4,7 @@ Isolated public probe for [microsoft/vscode#184142](https://github.com/microsoft
 
 The [GitHub Actions workflow](.github/workflows/reproduce.yml) runs the probe in an Xvfb display. Its `issue-184142-diagnostic` artifact contains the trace, screenshot when available, and `result.json`.
 
-The diagnostic packages the provider as a VSIX and installs it in a disposable profile of VS Code 1.136.1 on Linux. It starts in an empty workspace with the synthetic fixture open, edits the custom editor, performs Undo/Redo, then calls VS Code's `workbench.action.saveWorkspaceAs` command. The runner captures the save dialog and only enters a disposable workspace path when it identifies that dialog by title. An `alive` snapshot is recorded if the installed extension activates after the host restarts.
+The diagnostic packages the provider as a VSIX and installs it in a disposable profile of VS Code 1.136.1 on Linux. It starts in an empty window, registers the installed custom editor, opens the synthetic fixture with that editor, edits it, performs Undo/Redo, then calls VS Code's `workbench.action.saveWorkspaceAs` command. The runner captures the save dialog and only enters a disposable workspace path when it identifies that dialog by title. An `alive` snapshot is recorded if the installed extension activates after the host restarts.
 
 The synthetic extension explicitly supports VS Code's Restricted Mode so a loose file can open with the custom editor in a fresh profile. It reads only the fixture and uses no workspace commands or production data.
 

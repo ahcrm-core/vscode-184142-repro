@@ -89,6 +89,11 @@ function activate(context) {
   context.subscriptions.push(vscode.window.registerCustomEditorProvider('orqelon.issue184142', provider, { supportsMultipleEditorsPerDocument: false }));
   if (installed && hadWorkspaceSave) {
     setTimeout(() => { void vscode.commands.executeCommand('orqelon.issue184142.alive').catch(error => trace('alive_error', { message: String(error) })); }, 1000);
+  } else if (installed) {
+    setTimeout(() => {
+      void vscode.commands.executeCommand('vscode.openWith', vscode.Uri.file(process.env.ISSUE_184142_FIXTURE), 'orqelon.issue184142')
+        .catch(error => trace('open_with_error', { message: String(error) }));
+    }, 600);
   }
 }
 

@@ -98,8 +98,7 @@ setTimeout(finish, 190000);
   console.log('Installed synthetic probe from VSIX into disposable extension directory.');
   const child = spawn(executable, [
     '--no-sandbox', '--disable-gpu-sandbox', '--disable-updates', '--skip-welcome',
-    '--skip-release-notes', '--disable-telemetry', '--new-window', ...options,
-    path.join(root, 'fixture.orqtest')
-  ], { env: { ...process.env, ISSUE_184142_INSTALLED: '1' }, stdio: 'ignore' });
+    '--skip-release-notes', '--disable-telemetry', '--new-window', ...options
+  ], { env: { ...process.env, ISSUE_184142_INSTALLED: '1', ISSUE_184142_FIXTURE: path.join(root, 'fixture.orqtest') }, stdio: 'ignore' });
   child.on('exit', (code, signal) => { console.log('VS Code exited:', code, signal); if (!started) finish(); });
 })().catch(error => { console.log('Installed VS Code setup failed:', error.stack || String(error)); finish(); });
