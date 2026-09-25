@@ -60,7 +60,25 @@ const timer = setInterval(() => {
             xdotool(['mousemove', '--sync', String(x), String(y), 'click', '1']);
             console.log('Clicked Save in the identified workspace dialog.');
           }
-          setTimeout(() => { screenshot('after-workspace-save.png'); console.log('Visible windows after save:', JSON.stringify(windows())); }, 3000);
+          setTimeout(() => {
+            screenshot('after-workspace-save.png');
+            const next = windows();
+            console.log('Visible windows after save:', JSON.stringify(next));
+            const confirm = next.find(item => item.title === 'Visual Studio Code');
+            if (!confirm) { console.log('No separate VS Code restart confirmation identified.'); return; }
+            try {
+              const lines = xdotool(['getwindowgeometry', '--shell', confirm.id]);
+              const geometry = Object.fromEntries(lines.split('\n').filter(line => line.includes('=')).map(line => line.split('=')));
+              const width = Number(geometry.WIDTH);
+              const height = Number(geometry.HEIGHT);
+              if (width < 400 || width > 900 || height < 100 || height > 400) throw new Error('Confirmation window geometry unexpected');
+              xdotool(['windowfocus', confirm.id]);
+              xdotool(['mousemove', '--sync', String(Number(geometry.X) + Math.round(width * 0.75)), String(Number(geometry.Y) + height - 17), 'click', '1']);
+              fs.appendFileSync(trace, JSON.stringify({ at: new Date().toISOString(), pid: process.pid, event: 'restart_anyway_clicked' }) + '\n');
+              console.log('Clicked Restart Anyway in the identified confirmation window.');
+              setTimeout(() => { screenshot('after-restart-anyway.png'); console.log('Visible windows after restart:', JSON.stringify(windows())); }, 5000);
+            } catch (error) { console.log('Restart confirmation input failed:', error.message); }
+          }, 3000);
         }, 1200);
       } catch (error) { console.log('Workspace save input failed:', error.message); }
     }, 2000);
