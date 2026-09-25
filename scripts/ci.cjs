@@ -34,6 +34,7 @@ function windows() {
 
 let started = false;
 let deadline;
+let postRestartClicked = false;
 const timer = setInterval(() => {
   const observed = records();
   if (observed.some(item => item.event === 'workspace_save_requested') && !started) {
@@ -84,6 +85,19 @@ const timer = setInterval(() => {
       } catch (error) { console.log('Workspace save input failed:', error.message); }
     }, 2000);
   }
+  if (!postRestartClicked && observed.some(item => item.event === 'alive')) {
+    postRestartClicked = true;
+    screenshot('before-webview-click.png');
+    const main = windows().find(item => item.title.includes('fixture.orqtest'));
+    if (main) {
+      try {
+        xdotool(['windowfocus', main.id]);
+        xdotool(['mousemove', '--sync', '--window', main.id, '115', '194', 'click', '1']);
+        fs.appendFileSync(trace, JSON.stringify({ at: new Date().toISOString(), pid: process.pid, event: 'webview_click_sent' }) + '\n');
+        setTimeout(() => screenshot('after-webview-click.png'), 1000);
+      } catch (error) { console.log('Webview click input failed:', error.message); }
+    }
+  }
   if (deadline && Date.now() >= deadline) finish();
 }, 500);
 
@@ -99,6 +113,7 @@ function finish() {
   if (!events.includes('dirty_edit_done')) status = 'SETUP_FAILED';
   else if (!events.includes('workspace_save_requested')) status = 'WORKSPACE_SAVE_NOT_REQUESTED';
   else if (events.filter(event => event === 'extension_activate').length > 1 && events.includes('alive')) status = 'RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW';
+  if (status === 'RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW' && observed.find(item => item.event === 'after_save_tab')?.dirty && !events.includes('save')) status = 'RESTART_OBSERVED_SAVE_NOT_COMPLETED';
   fs.writeFileSync(path.join(artifacts, 'result.json'), JSON.stringify({ status, workspaceFileCreated: fs.existsSync(workspace), observed, note: 'First Red requires the real Save Workspace As/Restart Anyway transition and evidence that the surviving editor cannot save or track changes. A green CI job only means the diagnostic completed.' }, null, 2));
   console.log('DIAGNOSTIC_STATUS:', status);
   process.exit(0);

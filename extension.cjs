@@ -33,6 +33,18 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('orqelon.issue184142.alive', () => {
     const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs.map(tab => ({ label: tab.label, dirty: tab.isDirty, active: tab.isActive })));
     trace('alive', { openDocuments: [...documents.keys()], tabs });
+    if (installed && hadWorkspaceSave) {
+      setTimeout(async () => {
+        trace('save_attempt');
+        const result = await Promise.race([
+          vscode.commands.executeCommand('workbench.action.files.save').then(value => ({ outcome: 'resolved', value }), error => ({ outcome: 'error', message: String(error) })),
+          new Promise(resolve => setTimeout(() => resolve({ outcome: 'timeout' }), 5000))
+        ]);
+        trace('save_attempt_result', result);
+        const active = vscode.window.tabGroups.activeTabGroup.activeTab;
+        trace('after_save_tab', { label: active?.label, dirty: active?.isDirty });
+      }, 1500);
+    }
   }));
 
   const provider = {
@@ -49,9 +61,9 @@ function activate(context) {
       document.panels.add(panel);
       panel.onDidDispose(() => document.panels.delete(panel));
       panel.webview.options = { enableScripts: true, localResourceRoots: [] };
-      panel.webview.html = `<html><body><h1>Issue 184142 probe</h1><p id="value"></p><button id="edit">Edit marker</button><script>const api=acquireVsCodeApi();document.getElementById('edit').onclick=()=>api.postMessage({type:'edit'});window.addEventListener('message',e=>{document.getElementById('value').textContent=e.data.value});</script></body></html>`;
+      panel.webview.html = `<html><body><h1>Issue 184142 probe</h1><p id="value"></p><button id="edit">Edit marker</button><script>const api=acquireVsCodeApi();let clicks=0;document.getElementById('edit').onclick=()=>{document.getElementById('edit').textContent='Clicked '+(++clicks);api.postMessage({type:'edit'})};window.addEventListener('message',e=>{document.getElementById('value').textContent=e.data.value});</script></body></html>`;
       panel.webview.postMessage({ value: document.value });
-      panel.webview.onDidReceiveMessage(message => { if (message?.type === 'edit') edit(document); });
+      panel.webview.onDidReceiveMessage(message => { if (message?.type === 'edit') { trace('webview_message_received'); edit(document); } });
       trace('editor_resolve');
       if (installed && !hadWorkspaceSave && !probeStarted) {
         probeStarted = true;

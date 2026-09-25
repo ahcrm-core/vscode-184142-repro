@@ -10,4 +10,6 @@ The synthetic extension explicitly supports VS Code's Restricted Mode so a loose
 
 **Result policy:** `RESTART_OBSERVED_EDITOR_STATE_NEEDS_REVIEW` means the extension host restarted; it is **not** a reproduced bug. A real First Red additionally requires seeing that the original webview still accepts an edit but does not become dirty or save. `INCONCLUSIVE` is expected if Save Workspace As or Restart Anyway cannot be driven reliably. Linux is a separate platform from the reported macOS reproduction. Never report a passing workflow as a passing VS Code regression.
 
+After a confirmed restart, the installed extension records open documents and tab dirtiness, attempts VS Code Save, and the runner clicks the surviving webview button. The button changes its own label before posting to the host, allowing a screenshot to show that the UI accepted the click even if the old host connection is gone. `RESTART_OBSERVED_SAVE_NOT_COMPLETED` remains a diagnostic status until the trace and screenshots are reviewed together.
+
 The save dialog and restart prompt may vary with VS Code versions. Review the saved screenshots before interpreting results. The CI job is limited to twelve minutes and runs only for this test branch or when manually dispatched.
